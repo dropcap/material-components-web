@@ -16,7 +16,9 @@
  */
 
 import MDCComponent from '@material/base/component';
-import {MDCRipple} from '@material/ripple';
+import {MDCRipple, MDCRippleFoundation} from '@material/ripple';
+import {getMatchesProperty} from '@material/ripple/util';
+
 
 import {cssClasses, strings} from './constants';
 import {MDCTextfieldAdapter} from './adapter';
@@ -58,7 +60,7 @@ class MDCTextfield extends MDCComponent {
    * @param {(function(!Element): !MDCRipple)=} rippleFactory A function which
    * creates a new MDCRipple.
    */
-  initialize(rippleFactory = (el) => new MDCRipple(el)) {
+  initialize(rippleFactory = (el, foundation) => new MDCRipple(el, foundation)) {
     this.input_ = this.root_.querySelector(strings.INPUT_SELECTOR);
     this.label_ = this.root_.querySelector(strings.LABEL_SELECTOR);
     this.helptextElement = null;
@@ -67,7 +69,14 @@ class MDCTextfield extends MDCComponent {
       this.helptextElement = document.getElementById(this.input_.getAttribute('aria-controls'));
     }
     if (this.root_.classList.contains(cssClasses.BOX)) {
-      this.ripple = rippleFactory(this.root_);
+      const MATCHES = getMatchesProperty(HTMLElement.prototype);
+      const adapter = Object.assign(MDCRipple.createAdapter(this), {
+        isSurfaceActive: () => this.input_[MATCHES](':active'),
+        registerInteractionHandler: (type, handler) => this.input_.addEventListener(type, handler),
+        deregisterInteractionHandler: (type, handler) => this.input_.removeEventListener(type, handler),
+      });
+      const foundation = new MDCRippleFoundation(adapter);
+      this.ripple = rippleFactory(this.root_, foundation);
     };
     if (!this.root_.classList.contains(cssClasses.TEXTAREA)) {
       this.bottomLine_ = this.root_.querySelector(strings.BOTTOM_LINE_SELECTOR);
